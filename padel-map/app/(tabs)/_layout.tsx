@@ -47,13 +47,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: '3D City Map',
-          tabBarIcon: ({ color }) => <TabBarIcon name="building" color={color} />,
-        }}
-      />
+
     </Tabs>
   );
 }

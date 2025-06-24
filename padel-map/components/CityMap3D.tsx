@@ -7,6 +7,7 @@ import {
   Dimensions,
   PanResponder,
   Animated,
+  TouchableOpacity,
 } from 'react-native';
 import Svg, { Polygon, Polyline, Circle, G } from 'react-native-svg';
 
@@ -208,35 +209,67 @@ export default function CityMap3D() {
     rotation: 0,
   });
 
+  // Pan mode state
+  const [isPanMode, setIsPanMode] = useState(false);
+  const [lastTouchDistance, setLastTouchDistance] = useState(0);
+
   // Center on Strand, London
   const centerLat = 51.5115;
   const centerLon = -0.1200;
+
+  // Helper function to calculate distance between two touches
+  const getTouchDistance = (touches: any[]) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
 
   // Pan responder for map navigation
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {},
+      onPanResponderGrant: (evt) => {
+        if (evt.nativeEvent.touches.length === 2) {
+          setLastTouchDistance(getTouchDistance(evt.nativeEvent.touches));
+        }
+      },
       onPanResponderMove: (evt, gestureState) => {
         const { dx, dy, numberActiveTouches } = gestureState;
+        const touches = evt.nativeEvent.touches;
 
         if (numberActiveTouches === 1) {
-          // Single finger: pan and rotate
+          // Single finger: move around the map
           setCamera((prev) => ({
             ...prev,
             x: prev.x - dx * 2,
             y: prev.y - dy * 2,
-            rotation: prev.rotation + dx * 0.1,
           }));
         } else if (numberActiveTouches === 2) {
-          // Two fingers: zoom
-          setCamera((prev) => ({
-            ...prev,
-            zoom: Math.max(0.1, Math.min(3, prev.zoom + dy * 0.01)),
-          }));
+          if (isPanMode) {
+            // Pan mode: two fingers to pan
+            setCamera((prev) => ({
+              ...prev,
+              x: prev.x - dx * 2,
+              y: prev.y - dy * 2,
+            }));
+          } else {
+            // Normal mode: two fingers to zoom
+            const currentDistance = getTouchDistance(touches);
+            if (lastTouchDistance > 0) {
+              const scale = currentDistance / lastTouchDistance;
+              setCamera((prev) => ({
+                ...prev,
+                zoom: Math.max(0.1, Math.min(3, prev.zoom * scale)),
+              }));
+            }
+            setLastTouchDistance(currentDistance);
+          }
         }
       },
-      onPanResponderRelease: () => {},
+      onPanResponderRelease: () => {
+        setLastTouchDistance(0);
+      },
     })
   ).current;
 
@@ -403,6 +436,26 @@ export default function CityMap3D() {
         ))}
       </Svg>
 
+      {/* Pan Mode Toggle Button */}
+      <TouchableOpacity
+        style={[styles.panButton, isPanMode && styles.panButtonActive]}
+        onPress={() => setIsPanMode(!isPanMode)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.panButtonText, isPanMode && styles.panButtonTextActive]}>
+          {isPanMode ? '🖐️ PAN' : '🔍 ZOOM'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Reset View Button */}
+      <TouchableOpacity
+        style={styles.resetButton}
+        onPress={() => setCamera({ x: 0, y: 0, zoom: 0.8, rotation: 0 })}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.resetButtonText}>↺</Text>
+      </TouchableOpacity>
+
       {/* UI Overlays */}
       {error && (
         <View style={styles.errorContainer}>
@@ -416,10 +469,10 @@ export default function CityMap3D() {
         </Text>
         <Text style={styles.infoSubText}>📍 Strand, London - SVG City Outline</Text>
         <Text style={styles.helpText}>
-          One finger: Pan & Rotate | Two fingers: Zoom | Hermes Compatible
+          1 finger: Move | 2 fingers: {isPanMode ? 'Pan' : 'Zoom'} | Toggle mode with button
         </Text>
         <Text style={styles.cameraInfo}>
-          Zoom: {camera.zoom.toFixed(1)} | Rotation: {camera.rotation.toFixed(0)}°
+          Zoom: {camera.zoom.toFixed(1)} | Mode: {isPanMode ? 'Pan' : 'Zoom'}
         </Text>
       </View>
     </View>
@@ -507,5 +560,57 @@ const styles = StyleSheet.create({
     color: '#999999',
     fontSize: 10,
     textAlign: 'center',
+  },
+  panButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  panButtonActive: {
+    backgroundColor: 'rgba(0, 102, 204, 0.8)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  panButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  panButtonTextActive: {
+    color: '#ffffff',
+  },
+  resetButton: {
+    position: 'absolute',
+    top: 120,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  resetButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 }); 

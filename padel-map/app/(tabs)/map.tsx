@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
 import { View } from '@/components/Themed';
-import UserProfile from '@/components/UserProfile';
+import AppleMap from '@/components/AppleMap';
 
-export default function ProfileScreen() {
+export default function MapScreen() {
   return (
     <View style={styles.container}>
-      <UserProfile />
+      <AppleMap />
     </View>
   );
 }
@@ -14,4 +14,4 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-});
+}); 

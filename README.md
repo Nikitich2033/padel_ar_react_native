@@ -198,10 +198,6 @@ npx expo publish
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙋‍♂️ Support
-
-For support, email support@padelmap.com or create an issue in the GitHub repository.
-
 ## 🔮 Future Features
 
 - [ ] Real-time court availability
